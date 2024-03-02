@@ -1,0 +1,33 @@
+name: Lambda CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  BuildAndDeployLambda: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2 
+      - name: Build Artifact 
+        run: zip -r serverless.zip index.js
+    
+      # Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1 
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ secrets.AWS_REGION }}
+            
+      # Deploy push to AWS S3
+      - name: AWS Deploy push
+        run: |
+          aws s3 cp serverless.zip s3://lambda.prod.songyue.me
+
+            
+      # Create deployment to CodeDeploy
+      - name: AWS Create Deployment
+        run: |
+          aws lambda update-function-code --function-name csye6225-lambda --region us-east-1 --zip-file fileb://serverless.zip
